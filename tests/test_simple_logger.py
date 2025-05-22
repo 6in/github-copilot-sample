@@ -1,5 +1,4 @@
 import unittest
-import re
 from src.implementations.SimpleLogger import SimpleLogger, LogLevel
 
 class TestSimpleLogger(unittest.TestCase):
