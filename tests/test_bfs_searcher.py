@@ -2,7 +2,7 @@ import unittest
 from pathlib import Path
 import tempfile
 import shutil
-from src.BfsSearcher import BfsSearcher
+from src.implementations.BfsSearcher import BfsSearcher
 
 class TestBfsSearcher(unittest.TestCase):
     def setUp(self):
