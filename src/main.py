@@ -4,11 +4,21 @@ CLI検索ツール: コマンドラインからディレクトリを再帰的に
 パターンにマッチするファイルの内容を検索するツール
 """
 import sys
+import os
 import argparse
 from pathlib import Path
 from typing import List, Dict, Any
 
-from src.factories.ModuleFactory import ModuleFactory
+try:
+    from factories.ModuleFactory import ModuleFactory
+except ImportError:
+    # 親ディレクトリをシステムパスに追加する相対インポート
+    try:
+        from src.factories.ModuleFactory import ModuleFactory
+    except ImportError:
+        # 最後の手段としてパスを追加
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+        from src.factories.ModuleFactory import ModuleFactory
 
 # エクスポートする関数の明示的指定
 __all__ = ['parse_arguments', 'create_config', 'main']

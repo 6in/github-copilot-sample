@@ -1,1 +1,2 @@
+-e git+https://github.com/6in/github-copilot-sample.git@0313c5fb40cef9acee6143ab7a1e3e8b7a00bd4a#egg=cli_search_tool
 pathspec==0.12.1
