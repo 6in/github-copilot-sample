@@ -1,0 +1,822 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+implementations/
+  __init__.py
+  BfsSearcher.py
+  RegexMatcher.py
+  SimpleFormatter.py
+interfaces/
+  __init__.py
+  IFormatter.py
+  IIgnoreParser.py
+  ILogger.py
+  IMatcher.py
+  ISearcher.py
+__init__.py
+01.requirement-user.md
+01.requirement.md
+02.requirement-ai.md
+02.tasks.md
+03.interfaces.md
+03.tasks.md
+04.implements.md
+test_bfs_searcher.py
+test_regex_matcher.py
+test_simple_formatter.py
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="01.requirement.md">
+# 会話サマリ：CLI検索ツール要件定義
+
+- Python製CLIツールの要件定義をAIが作成。
+- 機能：指定フォルダの再帰探索、正規表現検索（複数行対応）、拡張子・除外パターン指定、標準出力、BFS・ファイル名順探索。
+- 除外パターンは.gitignore形式でコマンドライン指定。
+- ログ出力（INFO/DEBUG/ERROR）、デバッグオプション、エラー時は継続。
+- UTF-8限定、シンボリックリンク無視、最大サイズ・タイムアウト制限なし。
+- 検索結果の出力フォーマットやテストパターンも明記。
+- モジュール構成はmain/searcher/matcher/formatter/logger/ignore_parser/utilsに見直し。
+- JavaやRustでも同等の実装が可能と検討済み。
+- 実現可能性・要件の網羅性も確認済み。
+- 結果は、docs/02_requirement-ai.mdに格納済み。
+</file>
+
+<file path="02.tasks.md">
+# インタフェースベース＋Factoryパターン設計サマリ
+
+## 背景
+CLIユーティリティの開発にあたり、拡張性・保守性を高めるため、各機能をインタフェース（抽象基底クラス）で定義し、Factoryパターンで実装クラスを生成・注入する設計方針とした。
+
+## 設計方針
+- 各機能（Searcher, Matcher, Formatter, Logger, IgnoreParserなど）はインタフェースで定義。
+- 標準実装クラスを用意し、将来的な差し替えや拡張が容易。
+- Factoryクラス（ModuleFactory）で設定や引数に応じて各実装を生成。
+- main.pyではFactory経由で各機能をインスタンス化し、依存性注入（DI）を実現。
+
+## 主なインタフェースと実装例
+- ISearcher / BfsSearcher
+- IMatcher / RegexMatcher
+- IFormatter / SimpleFormatter
+- ILogger / SimpleLogger
+- IIgnoreParser / GitignoreParser
+
+## 推奨ファイル・フォルダ構成
+src/
+  interfaces/    # インタフェース定義
+  implementations/ # 実装クラス
+  factory/       # Factoryクラス
+  utils/         # 補助関数
+  main.py        # エントリポイント
+
+## 開発タスクの進め方（抜粋）
+1. インタフェース定義
+2. 実装クラス作成
+3. Factory作成
+4. main.py雛形・依存性注入
+5. 各機能詳細実装・テスト
+
+この方針により、柔軟かつ拡張性の高いCLIツール開発を目指す。
+</file>
+
+<file path="03.interfaces.md">
+# インタフェース（抽象基底クラス）作成サマリ（2025/5/15）
+
+## 実施内容
+- docs/03.tasks.mdの「インタフェース（抽象基底クラス）の作成」タスクを実施
+- 以下5種の抽象基底クラス（インタフェース）をsrc/interfaces/配下に作成
+  - ISearcher: ディレクトリ・ファイル探索用
+  - IMatcher: 正規表現マッチ用
+  - IFormatter: 検索結果整形用
+  - ILogger: ログ出力用
+  - IIgnoreParser: 除外パターン解析用
+- 各クラスはPythonのabcモジュールを用いた抽象基底クラスとして定義
+- それぞれのメソッド仕様・引数・返り値も要件に沿って明記
+- タスク進捗をdocs/03.tasks.mdに反映し、GITコミット済み
+
+## 次のステップ
+- 各インタフェースの実装クラス作成（BfsSearcher, RegexMatcher, SimpleFormatter, SimpleLogger, GitignoreParser など）
+- Factoryクラスの作成
+- main.py雛形作成・依存性注入
+
+---
+
+ご要望に応じて、各インタフェースの詳細や設計意図の説明も可能です。
+</file>
+
+<file path="04.implements.md">
+# BfsSearcher（ISearcher実装）作業サマリ
+
+## 実装内容
+- ISearcherインタフェース（抽象基底クラス）の仕様に従い、BFS（幅優先探索）でディレクトリ配下のファイルを探索する`BfsSearcher`クラスを新規実装。
+- 対象拡張子リスト（exts）、除外パターン（ignore_patterns）に対応。
+- `src/BfsSearcher.py`として作成。
+
+## テスト内容
+- `tests/test_bfs_searcher.py`にて、BfsSearcherの単体テストを作成。
+    - テスト用の一時ディレクトリ・ファイル構造をsetUp/tearDownで準備。
+    - 全ファイル探索、拡張子指定、除外パターン指定の3ケースをテスト。
+- テストは全て正常にパスすることを確認。
+
+## 補足
+- Pythonパッケージ認識のため、`src/`および`src/interfaces/`に`__init__.py`を追加。
+- テスト実行時のImportErrorも解消済み。
+
+---
+
+# RegexMatcher（IMatcher実装）作業サマリ（2025/5/22）
+
+## 実装内容
+- IMatcherインタフェースの仕様に従い、正規表現によるパターンマッチを行う`RegexMatcher`クラスを実装。
+- UTF-8エンコーディングファイルの読み込みと正規表現検索機能を実装。
+- 複数行にまたがるパターンマッチ（re.MULTILINE | re.DOTALLモード）に対応。
+- 行番号の正確な計算ロジックを実装（開始行・終了行の特定）。
+- エラー処理（UTF-8以外のエンコーディング、ファイル読み取りエラー等）を実装。
+- `src/implementations/RegexMatcher.py`として作成。
+
+## テスト内容
+- `tests/test_regex_matcher.py`にて、RegexMatcherの単体テストを作成。
+  - 単一行マッチのテスト（複数箇所マッチ）
+  - 複数行にまたがるパターンマッチのテスト
+  - 日本語テキストでのパターンマッチのテスト
+  - マッチしないケースのテスト
+- テストは全て正常にパスすることを確認。
+
+## 改善点
+- 空文字列マッチ時のインデックスエラー対策を実装。
+- エラー発生時のデバッグ情報出力を追加（将来的にはロガーで対応予定）。
+
+---
+
+今後も同様に、各インタフェース実装クラスごとに「実装」と「テスト」をセットで進めていきます。
+</file>
+
+<file path="01.requirement-user.md">
+# 要望
+
+- Pythonにて指定したフォルダを再帰的に探索し、検索文字列にマッチする行を出力するCLIユーティリティを作成する。
+- 引数は、探索フォルダ、検索文字列とし、オプションとして拡張子を複数指定できるようにする。
+- 検索文字列は、正規表現も可能としたい。
+- 正規表現での検索は、複数行を跨ぐ検索も可能としてください。
+</file>
+
+<file path="02.requirement-ai.md">
+# AI向け要件（設計方針追記）
+
+## 設計方針（2025年5月15日 追記）
+- 各機能（Searcher, Matcher, Formatter, Logger, IgnoreParserなど）はインタフェース（抽象基底クラス）で定義する。
+- 各インタフェースの標準実装クラスを作成する。
+- Factoryパターンを用いて、main.py等の利用側はFactory経由で必要な実装クラスをインスタンス化する。
+- 依存性注入（DI）により、main.pyは各機能の具象クラスに依存しない構造とする。
+- 将来的な機能拡張や差し替えが容易な構成とする。
+
+### 主なインタフェースと実装例
+- ISearcher / BfsSearcher
+- IMatcher / RegexMatcher
+- IFormatter / SimpleFormatter
+- ILogger / SimpleLogger
+- IIgnoreParser / GitignoreParser
+
+### 推奨ファイル・フォルダ構成
+src/
+  interfaces/    # インタフェース定義
+  implementations/ # 実装クラス
+  factory/       # Factoryクラス
+  utils/         # 補助関数
+  main.py        # エントリポイント
+
+### 開発タスクの進め方（抜粋）
+1. インタフェース定義
+2. 実装クラス作成
+3. Factory作成
+4. main.py雛形・依存性注入
+5. 各機能詳細実装・テスト
+
+---
+
+# 要件定義（AIによる）
+
+## 概要
+Pythonで実装するCLIユーティリティ。指定したフォルダ配下のファイルを再帰的に探索し、検索文字列（正規表現対応）にマッチする行または範囲を出力する。
+
+## 機能要件
+1. 指定フォルダを再帰的に探索し、ファイルを検索対象とする。
+2. 検索文字列は正規表現に対応し、複数行にまたがるパターンも検索可能とする。
+3. コマンドライン引数で以下を指定できる：
+   - 探索フォルダ（必須）
+   - 検索文字列（必須）
+   - 検索対象とする拡張子（任意、複数指定可）
+4. 検索結果として、マッチした行または範囲を標準出力に表示する。
+
+## 非機能要件
+- Python 3.xで動作すること。
+- サードパーティ製ライブラリの利用は制限しない。
+- CLIとして直感的に利用できること。
+
+## 制約事項・補足仕様
+- ファイルのエンコーディングはUTF-8のみ対応とする。
+- シンボリックリンクは無視し、探索対象としない。
+- ファイル探索は幅優先（BFS）で行い、ファイル名順で処理する。
+- 検索結果の出力は標準出力のみ対応とする。
+- 検索除外パターンに対応する（例：.gitや特定ディレクトリ/ファイルを除外可能とする）。
+  - 除外パターンはコマンドライン引数で指定し、ファイルフォーマットは.gitignoreと同じとする。
+- 読み取り不可ファイル等のエラー発生時は、エラーログを出力し処理を継続する。
+- デバッグ用オプションを追加し、詳細なログ出力を可能とする。
+  - ログレベルはINFO/DEBUG/ERRORで切り替え可能とする。
+- 検索対象ファイルの最大サイズやタイムアウトには制限を設けない。
+
+## 検索結果の出力フォーマット
+- 1件ごとに以下の形式で出力する：
+  
+  <ファイルパス>:<開始行番号>-<終了行番号> <該当行または範囲の内容>
+  
+  例：
+  /path/to/file.py:12-12 print("Hello World")
+  /path/to/file.py:20-22 def func(): ...
+- 複数行にマッチした場合は、開始行番号-終了行番号で範囲を示す。
+- 1行のみの場合は、開始行番号と終了行番号は同じ値とする。
+
+## モジュール構成（見直し案）
+- main.py
+  - CLIエントリポイント。引数パース、全体制御、ログ初期化。
+- searcher.py
+  - ディレクトリ探索（BFS）、ファイルフィルタリング（拡張子・除外パターン）、シンボリックリンク無視。
+- matcher.py
+  - ファイル内容の正規表現検索（複数行対応）、UTF-8限定読み込み。
+- formatter.py
+  - 検索結果の出力フォーマット整形。
+- logger.py
+  - ログ出力・デバッグレベル制御（INFO/DEBUG/ERROR）。
+- ignore_parser.py
+  - .gitignore形式の除外パターン解析・適用。
+- utils.py（必要に応じて）
+  - 汎用補助関数。
+
+src/ 配下に各モジュールを配置する。
+
+## 必要なライブラリ
+- Python 標準ライブラリ
+  - os, sys, argparse, re, pathlib など
+- サードパーティ製ライブラリ（必要に応じて）
+  - rich（出力の装飾や強調表示を行いたい場合）
+  - tqdm（進捗バー表示を行いたい場合）
+
+標準ライブラリのみで実装可能だが、利便性や視認性向上のためにサードパーティ製ライブラリの利用も検討する。
+
+## テストパターン（例）
+1. 単一ファイル・単一行マッチ：
+   - 1つのファイル内で1行だけにマッチするパターン
+2. 単一ファイル・複数行マッチ：
+   - 1つのファイル内で複数行にまたがる正規表現パターン
+3. 複数ファイル・複数マッチ：
+   - 複数ファイルでそれぞれマッチが存在する場合
+4. 拡張子指定あり・なし：
+   - 拡張子指定時のみ対象ファイルが絞られることを確認
+   - 拡張子指定なしで全ファイルが対象となることを確認
+5. マッチなし：
+   - 検索条件に該当する行が存在しない場合
+6. サブディレクトリ内ファイル：
+   - サブディレクトリ配下のファイルも探索対象となること
+7. 日本語や特殊文字を含むパターン：
+   - Unicode文字列や特殊記号を含む検索
+8. 大容量ファイル・大量ファイル：
+   - パフォーマンスやエラー発生の有無を確認
+9. 権限エラー・読み取り不可ファイル：
+   - アクセス権限がないファイルが存在する場合の動作
+10. 複数行正規表現の境界ケース：
+    - ファイルの先頭・末尾にまたがるマッチなど
+</file>
+
+<file path="03.tasks.md">
+# 開発タスクチェックリスト（インタフェース＋Factoryパターン順）
+
+- [x] インタフェース（抽象基底クラス）の作成
+  - [x] ISearcher
+  - [x] IMatcher
+  - [x] IFormatter
+  - [x] ILogger
+  - [x] IIgnoreParser
+- [ ] 各インタフェースの実装クラス作成
+  - [x] BfsSearcher（ISearcher実装）
+    - [x] BfsSearcherの実装
+    - [x] BfsSearcherのテスト作成
+  - [x] RegexMatcher（IMatcher実装）
+    - [x] RegexMatcherの実装
+    - [x] RegexMatcherのテスト作成
+  - [ ] SimpleFormatter（IFormatter実装）
+    - [ ] SimpleFormatterの実装
+    - [ ] SimpleFormatterのテスト作成
+  - [ ] SimpleLogger（ILogger実装）
+    - [ ] SimpleLoggerの実装
+    - [ ] SimpleLoggerのテスト作成
+  - [ ] GitignoreParser（IIgnoreParser実装）
+    - [ ] GitignoreParserの実装
+    - [ ] GitignoreParserのテスト作成
+- [ ] Factoryクラスの作成
+  - [ ] ModuleFactory（設定や引数に応じて各実装を生成）
+- [ ] main.pyの雛形作成・依存性注入
+  - [ ] コマンドライン引数の設計・パース
+  - [ ] Factory経由で各機能をインスタンス化
+  - [ ] ログ初期化処理
+- [ ] 各機能の詳細実装
+  - [ ] searcher.py: ディレクトリ探索・ファイルフィルタリング
+  - [ ] matcher.py: 正規表現検索
+  - [ ] formatter.py: 検索結果の整形
+  - [ ] logger.py: ログ出力・レベル制御
+  - [ ] ignore_parser.py: 除外パターン解析
+  - [ ] utils.py: 汎用補助関数（必要に応じて）
+- [ ] main.py: 全体制御フローの実装
+- [ ] エラー処理
+  - [ ] 読み取り不可ファイル等の例外処理と継続動作
+- [ ] オプション機能
+  - [ ] rich/tqdm等のサードパーティライブラリ対応（必要に応じて）
+- [ ] テスト
+  - [ ] 単一ファイル・単一行マッチ
+  - [ ] 単一ファイル・複数行マッチ
+  - [ ] 複数ファイル・複数マッチ
+  - [ ] 拡張子指定あり・なし
+  - [ ] マッチなし
+  - [ ] サブディレクトリ内ファイル
+  - [ ] 日本語や特殊文字を含むパターン
+  - [ ] 大容量ファイル・大量ファイル
+  - [ ] 権限エラー・読み取り不可ファイル
+  - [ ] 複数行正規表現の境界ケース
+</file>
+
+<file path="implementations/__init__.py">
+# 空の __init__.py ファイル
+# このファイルはPythonがディレクトリをパッケージとして認識するために必要
+</file>
+
+<file path="implementations/BfsSearcher.py">
+from pathlib import Path
+from typing import List
+from src.interfaces.ISearcher import ISearcher
+from collections import deque
+
+class BfsSearcher(ISearcher):
+    def search(self, root_dir: Path, exts: List[str], ignore_patterns: List[str]) -> List[Path]:
+        """
+        ディレクトリ配下をBFSで探索し、条件に合致するファイルパスのリストを返す。
+        :param root_dir: 探索開始ディレクトリ
+        :param exts: 対象拡張子リスト（空なら全て）
+        :param ignore_patterns: 除外パターンリスト
+        :return: ファイルパスのリスト
+        """
+        result = []
+        queue = deque([root_dir])
+        while queue:
+            current = queue.popleft()
+            if any(current.match(pattern) for pattern in ignore_patterns):
+                continue
+            if current.is_dir():
+                for child in current.iterdir():
+                    queue.append(child)
+            elif current.is_file():
+                if not exts or current.suffix in exts:
+                    result.append(current)
+        return result
+</file>
+
+<file path="implementations/RegexMatcher.py">
+import re
+from typing import List, Tuple
+from src.interfaces.IMatcher import IMatcher
+
+class RegexMatcher(IMatcher):
+    def match(self, file_path: str, pattern: str) -> List[Tuple[int, int, str]]:
+        """
+        ファイル内で正規表現パターンにマッチする範囲を返す。
+        :param file_path: 対象ファイルパス
+        :param pattern: 正規表現パターン
+        :return: (開始行, 終了行, マッチ内容) のリスト
+        """
+        results = []
+        
+        try:
+            # UTF-8でファイルを読み込む
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # 正規表現コンパイル（マルチラインモード）
+            regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
+            
+            # 全マッチを検索
+            for match in regex.finditer(content):
+                # マッチした内容
+                match_text = match.group(0)
+                
+                # マッチ開始位置から行番号を計算
+                start_pos = match.start()
+                end_pos = match.end() - 1 if match.end() > 0 else 0  # 終了位置は最後の文字のインデックス（空文字対策）
+                
+                # マッチ開始位置までの改行数をカウントして行番号を得る（0オリジン→1オリジン）
+                start_line = content[:start_pos].count('\n') + 1
+                
+                # マッチ終了位置までの改行数をカウントして行番号を得る（0オリジン→1オリジン）
+                end_line = content[:end_pos].count('\n') + 1
+                
+                results.append((start_line, end_line, match_text))
+                
+        except UnicodeDecodeError:
+            # UTF-8以外のエンコーディングはスキップ
+            pass
+        except Exception as e:
+            # その他のエラーは無視して継続（将来的にはロガーでログ出力）
+            print(f"Error processing file {file_path}: {e}")
+            pass
+            
+        return results
+</file>
+
+<file path="implementations/SimpleFormatter.py">
+from typing import List, Tuple
+from src.interfaces.IFormatter import IFormatter
+
+class SimpleFormatter(IFormatter):
+    """
+    IFormatterの標準実装。検索結果を「ファイルパス:開始行-終了行 内容」の形式で整形する。
+    """
+    
+    def format(self, matches: List[Tuple[str, int, int, str]]) -> str:
+        """
+        検索結果を標準出力用に整形する。
+        :param matches: (ファイルパス, 開始行, 終了行, 内容) のリスト
+        :return: 整形済み文字列
+        """
+        if not matches:
+            return "マッチする結果は見つかりませんでした。"
+        
+        result_lines = []
+        for file_path, start_line, end_line, content in matches:
+            # 複数行コンテンツを整形（複数行の場合は内容を短縮する）
+            if '\n' in content:
+                # 複数行にまたがる場合は省略形で表示
+                first_line = content.split('\n')[0]
+                formatted_content = f"{first_line.strip()}..."
+            else:
+                formatted_content = content.strip()
+            
+            # 行範囲を表示（1行のみの場合も開始行-終了行の形式で統一）
+            line_range = f"{start_line}-{end_line}"
+            
+            # 出力行を整形
+            result_line = f"{file_path}:{line_range} {formatted_content}"
+            result_lines.append(result_line)
+        
+        return '\n'.join(result_lines)
+</file>
+
+<file path="interfaces/__init__.py">
+# パッケージとして認識させるための空ファイル
+</file>
+
+<file path="interfaces/IFormatter.py">
+from abc import ABC, abstractmethod
+from typing import List, Tuple
+
+class IFormatter(ABC):
+    @abstractmethod
+    def format(self, matches: List[Tuple[str, int, int, str]]) -> str:
+        """
+        検索結果を標準出力用に整形する。
+        :param matches: (ファイルパス, 開始行, 終了行, 内容) のリスト
+        :return: 整形済み文字列
+        """
+        pass
+</file>
+
+<file path="interfaces/IIgnoreParser.py">
+from abc import ABC, abstractmethod
+from typing import List
+
+class IIgnoreParser(ABC):
+    @abstractmethod
+    def parse(self, ignore_file_path: str) -> List[str]:
+        """
+        除外パターンファイル（例: .gitignore）を解析し、パターンリストを返す。
+        :param ignore_file_path: 除外パターンファイルのパス
+        :return: 除外パターンのリスト
+        """
+        pass
+</file>
+
+<file path="interfaces/ILogger.py">
+from abc import ABC, abstractmethod
+
+class ILogger(ABC):
+    @abstractmethod
+    def info(self, msg: str):
+        pass
+
+    @abstractmethod
+    def debug(self, msg: str):
+        pass
+
+    @abstractmethod
+    def error(self, msg: str):
+        pass
+</file>
+
+<file path="interfaces/IMatcher.py">
+from abc import ABC, abstractmethod
+from typing import List, Tuple
+
+class IMatcher(ABC):
+    @abstractmethod
+    def match(self, file_path: str, pattern: str) -> List[Tuple[int, int, str]]:
+        """
+        ファイル内で正規表現パターンにマッチする範囲を返す。
+        :param file_path: 対象ファイルパス
+        :param pattern: 正規表現パターン
+        :return: (開始行, 終了行, マッチ内容) のリスト
+        """
+        pass
+</file>
+
+<file path="interfaces/ISearcher.py">
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import List
+
+class ISearcher(ABC):
+    @abstractmethod
+    def search(self, root_dir: Path, exts: List[str], ignore_patterns: List[str]) -> List[Path]:
+        """
+        ディレクトリ配下を再帰的に探索し、条件に合致するファイルパスのリストを返す。
+        :param root_dir: 探索開始ディレクトリ
+        :param exts: 対象拡張子リスト（空なら全て）
+        :param ignore_patterns: 除外パターンリスト
+        :return: ファイルパスのリスト
+        """
+        pass
+</file>
+
+<file path="__init__.py">
+# パッケージとして認識させるための空ファイル
+</file>
+
+<file path="__init__.py">
+# パッケージとして認識させるための空ファイル
+</file>
+
+<file path="__init__.py">
+# 空の __init__.py ファイル
+# このファイルはPythonがディレクトリをパッケージとして認識するために必要
+</file>
+
+<file path="__init__.py">
+# 空の __init__.py ファイル
+# このファイルはPythonがディレクトリをパッケージとして認識するために必要
+</file>
+
+<file path="test_bfs_searcher.py">
+import unittest
+from pathlib import Path
+import tempfile
+import shutil
+from src.implementations.BfsSearcher import BfsSearcher
+
+class TestBfsSearcher(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        # ディレクトリ構造作成
+        Path(f"{self.temp_dir}/a.txt").write_text("test a")
+        Path(f"{self.temp_dir}/b.py").write_text("test b")
+        sub_dir = Path(f"{self.temp_dir}/sub")
+        sub_dir.mkdir()
+        Path(f"{self.temp_dir}/sub/c.txt").write_text("test c")
+        Path(f"{self.temp_dir}/sub/d.md").write_text("test d")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+
+    def test_search_all(self):
+        searcher = BfsSearcher()
+        files = searcher.search(Path(self.temp_dir), [], [])
+        self.assertEqual(len(files), 4)
+
+    def test_search_ext_txt(self):
+        searcher = BfsSearcher()
+        files = searcher.search(Path(self.temp_dir), ['.txt'], [])
+        self.assertEqual(len(files), 2)
+        for f in files:
+            self.assertTrue(str(f).endswith('.txt'))
+
+    def test_search_ignore(self):
+        searcher = BfsSearcher()
+        files = searcher.search(Path(self.temp_dir), [], ['*/sub/*'])
+        self.assertEqual(len(files), 2)
+        for f in files:
+            self.assertFalse('sub' in str(f))
+
+if __name__ == '__main__':
+    unittest.main()
+</file>
+
+<file path="test_regex_matcher.py">
+import unittest
+from pathlib import Path
+import tempfile
+import os
+from src.implementations.RegexMatcher import RegexMatcher
+
+class TestRegexMatcher(unittest.TestCase):
+    def setUp(self):
+        # テスト用の一時ファイルを作成
+        self.temp_dir = tempfile.mkdtemp()
+        
+        # 単一行のテスト用ファイル
+        self.single_line_file = os.path.join(self.temp_dir, "single_line.txt")
+        with open(self.single_line_file, 'w', encoding='utf-8') as f:
+            f.write("This is a test file for RegexMatcher.\n")
+            f.write("It contains some test patterns.\n")
+            f.write("Like regex pattern test.\n")
+            f.write("End of file.")
+        
+        # 複数行のテスト用ファイル
+        self.multi_line_file = os.path.join(self.temp_dir, "multi_line.txt")
+        with open(self.multi_line_file, 'w', encoding='utf-8') as f:
+            f.write("Start of multi-line file.\n")
+            f.write("This is a\n")
+            f.write("multi-line\n")
+            f.write("pattern that spans\n")
+            f.write("across multiple lines.\n")
+            f.write("End of file.")
+        
+        # 日本語テキスト用ファイル
+        self.japanese_file = os.path.join(self.temp_dir, "japanese.txt")
+        with open(self.japanese_file, 'w', encoding='utf-8') as f:
+            f.write("これは日本語のテストファイルです。\n")
+            f.write("正規表現のパターンマッチをテストします。\n")
+            f.write("複数行に渡る\n")
+            f.write("パターンも\n")
+            f.write("テストします。\n")
+    
+    def tearDown(self):
+        # テスト終了後に一時ディレクトリを削除
+        import shutil
+        shutil.rmtree(self.temp_dir)
+    
+    def test_single_line_match(self):
+        matcher = RegexMatcher()
+        # "test"という単語にマッチするパターン
+        matches = matcher.match(self.single_line_file, r"test")
+        
+        # 3つのマッチが見つかるはず
+        self.assertEqual(len(matches), 3)
+        
+        # 各マッチが正しい行にあるか確認
+        self.assertEqual(matches[0][0], 1)  # 1行目のマッチ
+        self.assertEqual(matches[1][0], 2)  # 2行目のマッチ
+        self.assertEqual(matches[2][0], 3)  # 3行目のマッチ
+        
+        # 全てのマッチが単一行内であることを確認
+        for start_line, end_line, _ in matches:
+            self.assertEqual(start_line, end_line)
+    
+    def test_multi_line_match(self):
+        matcher = RegexMatcher()
+        # 複数行にまたがるパターン
+        pattern = r"This is a\nmulti-line\npattern"
+        matches = matcher.match(self.multi_line_file, pattern)
+        
+        # 1つのマッチが見つかるはず
+        self.assertEqual(len(matches), 1)
+        
+        # マッチは2行目から4行目にまたがるはず
+        start_line, end_line, match_text = matches[0]
+        self.assertEqual(start_line, 2)
+        self.assertEqual(end_line, 4)
+        self.assertIn("This is a", match_text)
+        self.assertIn("multi-line", match_text)
+        self.assertIn("pattern", match_text)
+    
+    def test_japanese_text(self):
+        matcher = RegexMatcher()
+        # 日本語の正規表現パターン
+        pattern = r"複数行に渡る\nパターンも"
+        matches = matcher.match(self.japanese_file, pattern)
+        
+        # 1つのマッチが見つかるはず
+        self.assertEqual(len(matches), 1)
+        
+        # マッチは3行目から4行目にまたがるはず
+        start_line, end_line, match_text = matches[0]
+        self.assertEqual(start_line, 3)
+        self.assertEqual(end_line, 4)
+        self.assertIn("複数行に渡る", match_text)
+        self.assertIn("パターンも", match_text)
+    
+    def test_no_match(self):
+        matcher = RegexMatcher()
+        # ファイルに存在しないパターン
+        matches = matcher.match(self.single_line_file, r"nonexistent pattern")
+        
+        # マッチは見つからないはず
+        self.assertEqual(len(matches), 0)
+
+if __name__ == '__main__':
+    unittest.main()
+</file>
+
+<file path="test_simple_formatter.py">
+import unittest
+from src.implementations.SimpleFormatter import SimpleFormatter
+
+class TestSimpleFormatter(unittest.TestCase):
+    def setUp(self):
+        self.formatter = SimpleFormatter()
+    
+    def test_empty_matches(self):
+        """空のマッチリストの場合のテスト"""
+        matches = []
+        result = self.formatter.format(matches)
+        self.assertEqual(result, "マッチする結果は見つかりませんでした。")
+    
+    def test_single_line_match(self):
+        """単一行マッチのフォーマットテスト"""
+        matches = [
+            ("/path/to/file.py", 12, 12, "print(\"Hello World\")"),
+            ("/path/to/another.py", 5, 5, "def test_func():"),
+        ]
+        result = self.formatter.format(matches)
+        expected = "/path/to/file.py:12-12 print(\"Hello World\")\n/path/to/another.py:5-5 def test_func():"
+        self.assertEqual(result, expected)
+    
+    def test_multi_line_match(self):
+        """複数行マッチのフォーマットテスト"""
+        matches = [
+            ("/path/to/file.py", 20, 22, "def func():\n    print(\"test\")\n    return True"),
+            ("/path/to/another.py", 8, 10, "class Test:\n    def __init__(self):\n        pass"),
+        ]
+        result = self.formatter.format(matches)
+        expected = "/path/to/file.py:20-22 def func()...\n/path/to/another.py:8-10 class Test:..."
+        self.assertEqual(result, expected)
+    
+    def test_mixed_line_match(self):
+        """単一行と複数行が混在するマッチのフォーマットテスト"""
+        matches = [
+            ("/path/to/file.py", 12, 12, "print(\"Hello World\")"),
+            ("/path/to/another.py", 8, 10, "class Test:\n    def __init__(self):\n        pass"),
+        ]
+        result = self.formatter.format(matches)
+        expected = "/path/to/file.py:12-12 print(\"Hello World\")\n/path/to/another.py:8-10 class Test:..."
+        self.assertEqual(result, expected)
+    
+    def test_japanese_content(self):
+        """日本語コンテンツのフォーマットテスト"""
+        matches = [
+            ("/path/to/file.txt", 1, 1, "これは日本語のテストです。"),
+            ("/path/to/another.txt", 3, 5, "複数行の\n日本語\nテスト"),
+        ]
+        result = self.formatter.format(matches)
+        expected = "/path/to/file.txt:1-1 これは日本語のテストです。\n/path/to/another.txt:3-5 複数行の..."
+        self.assertEqual(result, expected)
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
+</file>
+
+</files>

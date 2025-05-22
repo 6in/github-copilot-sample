@@ -1,0 +1,17 @@
+.venv
+sammary.xml
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.egg-info/
+*.egg
+*.log
+*.coverage
+*.cover
+*.hypothesis/
+*.hypothesis/
+*.tox/
+*.coverage.*
