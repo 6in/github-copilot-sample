@@ -24,16 +24,30 @@ class SimpleLogger(ILogger):
     ERROR < INFO < DEBUG の順で詳細度が上がる。
     """
     
-    def __init__(self, level: LogLevel = LogLevel.INFO, output_enabled: bool = True):
+    def __init__(self, level: LogLevel = LogLevel.INFO, output_enabled: bool = True, log_level: str = None):
         """
         SimpleLoggerを初期化する。
         
         :param level: ログレベル（デフォルトはINFO）
         :param output_enabled: 標準出力への出力を有効にするかどうか（デフォルトはTrue）
+        :param log_level: 文字列で指定するログレベル（"DEBUG", "INFO", "ERROR"）
         """
-        self.level = level
         self.output_enabled = output_enabled
         self.log_history = []  # テスト用にログ履歴を保持
+        
+        # 文字列でログレベルが指定されている場合はそれを優先
+        if log_level is not None:
+            if log_level.upper() == "DEBUG":
+                self.level = LogLevel.DEBUG
+            elif log_level.upper() == "INFO":
+                self.level = LogLevel.INFO
+            elif log_level.upper() == "ERROR":
+                self.level = LogLevel.ERROR
+            else:
+                # 不明なレベルの場合はINFOにフォールバック
+                self.level = LogLevel.INFO
+        else:
+            self.level = level
         
     def set_level(self, level: LogLevel):
         """
